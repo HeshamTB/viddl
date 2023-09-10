@@ -32,14 +32,19 @@ func (l *Logger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (l *Logger) getMethodLogString(method string) string {
    colorBlue := "\033[34m"
    colorReset := "\033[0m"
-   // colorRed := "\033[31m"
-   // colorGreen := "\033[32m"
-   // colorYellow := "\033[33m"
+   colorRed := "\033[31m"
+   colorGreen := "\033[32m"
+   colorYellow := "\033[33m"
    // colorPurple := "\033[35m"
    // colorCyan := "\033[36m"
    // colorWhite := "\033[37m"
-    if method == "GET" { return colorBlue + "GET" + colorReset }
-    return method
+    switch method {
+    case "GET": return colorBlue + "GET" + colorReset
+    case "POST": return colorGreen + "POST" + colorReset
+    case "DELETE": return colorRed + "DELETE" + colorReset
+    case "PUT": return colorYellow + "PUT" + colorReset
+    default: return method
+    }
 }
 
 func NewLogger(handler http.Handler) *Logger {
