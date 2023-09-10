@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -12,6 +14,12 @@ const (
     DEFAULT_HTTP_PORT = "8080"
     DEFAULT_HTTPS_PORT = "4433"
 )
+
+type DownloadFormats struct {
+    VideoRes string
+    videoOnly bool
+    audioOnly bool
+}
 
 type apiMessageResponse struct {
     Message string
@@ -53,6 +61,7 @@ func NewLogger(handler http.Handler) *Logger {
 
 func writeJSONResponse(w http.ResponseWriter, s string) http.ResponseWriter {
     w.WriteHeader(http.StatusBadRequest)
+    w.Header().Set("Content-Type", "application/json")
     jsonResp, err := json.Marshal(apiMessageResponse{Message: s})
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
@@ -75,18 +84,71 @@ func main() {
     handler.HandleFunc(
         "/download", 
         func(w http.ResponseWriter, r *http.Request) {
-            userURL := r.URL.Query().Get("url")
-            w.Header().Set("Content-Type", "application/json")
+            if r.Method != "POST" {
+                w.WriteHeader(400)
+                return
+            }
+            err := r.ParseForm()
+            if err != nil {
+                w.WriteHeader(400)
+                return
+            }
+            userURL := r.FormValue("URL")
             if userURL == "" {
                 w = writeJSONResponse(w, "Provide URL as query")
                 return
             }
-            w = writeJSONResponse(w, fmt.Sprintf("You sent %s ", userURL))},
+            // Get URL from convx
+            req, err := http.Get(fmt.Sprintf("http://localhost:80?url=%s", userURL))
+
+            if err != nil {
+                log.Println(err.Error())
+                w.WriteHeader(500)
+                return
+            }
+            if req.StatusCode != 200 {
+                log.Printf("Got %v from convx\n", req)
+                w.WriteHeader(500)
+                return
+            }
+            body, err := io.ReadAll(req.Body)
+            if err != nil {
+                w.WriteHeader(500)
+                log.Printf("Error while reading convx response body. \n%v", err.Error())
+                return
+            }
+            downloadURL := string(body)
+            log.Println("URL from convx", downloadURL)
+            
+            // Serve Button Template
+            tmpl := template.Must(template.ParseFiles("templates/download-result.html"))
+            err = tmpl.Execute(w, downloadURL)
+            if err != nil {
+                log.Println(err.Error())
+                w.WriteHeader(500)
+                return
+            }
+        },
     )
+    handler.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+        tmpl := template.Must(template.ParseFiles("templates/download.html"))
+        formats := []DownloadFormats{}
+        formats = append(formats, DownloadFormats{
+            VideoRes: "720p",
+            audioOnly: false,
+            videoOnly: false,
+        })
+        err := tmpl.Execute(w, formats)
+        if err != nil {
+            log.Println(err.Error())
+            w.WriteHeader(500)
+            return
+        }
+    })
 
     wrappedHandler := NewLogger(handler)
     srv := http.Server{
-        ReadTimeout: 3 * time.Second,
+        ReadTimeout: 10 * time.Second,
         WriteTimeout: 10 * time.Second,
         Addr: ":" + DEFAULT_HTTP_PORT,
         Handler: wrappedHandler,
