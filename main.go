@@ -161,7 +161,6 @@ func main() {
     )
     handler.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
         ctx := NewContext(r)
-        log.Println(ctx.AppURL)
         formats := []DownloadFormats{}
         formats = append(formats, DownloadFormats{
             VideoRes: "720p",
