@@ -11,6 +11,8 @@ RUN go build -o viddl .
 
 FROM alpine:3.18
 
+RUN apk add --no-cache yt-dlp
+
 COPY --from=builder /build/viddl /app/viddl
 
 RUN chmod +x /app/viddl
