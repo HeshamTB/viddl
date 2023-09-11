@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="{{ .AppURL }}/static/static/css/pico.min.css">
+        <link rel="stylesheet" href="{{ if .IsTLS }}https{{ else }}http{{ end }}://{{ .AppURL }}/static/static/css/pico.min.css">
         <script src="https://unpkg.com/htmx.org@1.9.5"></script>
         <title>YT Download</title>
     </head>

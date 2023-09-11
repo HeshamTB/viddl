@@ -1,1 +1,10 @@
+<div id="get-btn">
+{{ if  eq .StatusCode 200 }}
 <a href="{{ . }}" rel="" download target="_blank">Download</a>
+{{ else }}
+<button>Try Again
+    <!-- <a class="htmx-indicator" href="#" aria-busy="true"></a> -->
+</button>
+<mark>Internal Error. Try Again later</mark>
+{{ end }}
+</div>

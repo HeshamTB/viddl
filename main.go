@@ -81,6 +81,31 @@ func writeJSONResponse(w http.ResponseWriter, s string) http.ResponseWriter {
 var templates *template.Template
 
 // TODO: Change all this to have a unified context
+type Context struct {
+    request *http.Request
+    Formats []DownloadFormats
+    AppURL string
+    StatusCode int
+    Err *error
+    IsTLS bool
+}
+
+func NewContext(r *http.Request) *Context {
+    return &Context{
+        request: r,
+        StatusCode: 200,
+        Formats: []DownloadFormats{
+            {
+                VideoRes: "720p",
+                videoOnly: false,
+                audioOnly: false,
+            },
+        },
+        AppURL: r.Host,
+        IsTLS: false,
+    }
+}
+
 var AppURL string = "http://localhost:8080"
 type HTMLBaseData struct {
     Formats []DownloadFormats
@@ -105,6 +130,7 @@ func main() {
     handler.HandleFunc(
         "/download", 
         func(w http.ResponseWriter, r *http.Request) {
+            ctx := NewContext(r)
             if r.Method != "POST" {
                 w.WriteHeader(400)
                 return
@@ -124,33 +150,42 @@ func main() {
 
             if err != nil {
                 log.Println(err.Error())
-                w.WriteHeader(500)
+                ctx.StatusCode = 500
+                ctx.Err = &err
+                err = templates.ExecuteTemplate(w,"download-result.html", ctx)
                 return
             }
             if req.StatusCode != 200 {
                 log.Printf("Got %v from convx\n", req)
-                w.WriteHeader(500)
+                ctx.StatusCode = 500
+                ctx.Err = &err
+                err = templates.ExecuteTemplate(w,"download-result.html", ctx)
                 return
             }
             body, err := io.ReadAll(req.Body)
             if err != nil {
-                w.WriteHeader(500)
                 log.Printf("Error while reading convx response body. \n%v", err.Error())
+                ctx.StatusCode = 500
+                ctx.Err = &err
+                err = templates.ExecuteTemplate(w,"download-result.html", ctx)
                 return
             }
             downloadURL := string(body)
             log.Println("URL from convx", downloadURL)
             
-            // Serve Button Template
-            err = templates.ExecuteTemplate(w,"download-result.html", downloadURL)
+            err = templates.ExecuteTemplate(w,"download-result.html", ctx)
             if err != nil {
                 log.Println(err.Error())
-                w.WriteHeader(500)
+                ctx.StatusCode = 500
+                ctx.Err = &err
+                err = templates.ExecuteTemplate(w,"download-result.html", ctx)
                 return
             }
         },
     )
     handler.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+        ctx := NewContext(r)
+        log.Println(ctx.AppURL)
         formats := []DownloadFormats{}
         formats = append(formats, DownloadFormats{
             VideoRes: "720p",
@@ -158,7 +193,7 @@ func main() {
             videoOnly: false,
         })
         appData.Formats = formats
-        err := templates.ExecuteTemplate(w, "download.html", appData)
+        err := templates.ExecuteTemplate(w, "download.html", ctx)
         if err != nil {
             log.Println(err.Error())
             w.WriteHeader(500)
