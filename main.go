@@ -32,7 +32,12 @@ func (l *Logger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     tNow := time.Now().UTC()
     l.Handler.ServeHTTP(w, r)
     methodString := l.getMethodLogString(r.Method)
-    log.Printf(" %s %s %s %v", r.RemoteAddr, methodString, r.URL, time.Since(tNow))
+    remote := r.RemoteAddr
+    realIP := r.Header.Get("X-Real-IP")
+    if realIP != "" {
+        remote = realIP
+    }
+    log.Printf(" %s %s %s %v", remote, methodString, r.URL, time.Since(tNow))
 }
 
 func (l *Logger) getMethodLogString(method string) string {
