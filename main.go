@@ -1,7 +1,6 @@
 package main
 
 import (
-	"embed"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -10,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"gitea.hbanafa.com/hesham/viddl/resources"
+	"gitea.hbanafa.com/hesham/viddl/templates"
 )
 
 const (
@@ -80,12 +79,12 @@ func writeJSONResponse(w http.ResponseWriter, s string) http.ResponseWriter {
     
 }
 
-var templates *template.Template
+var views *template.Template
 
 func init() {
     
     log.Println("[ init ] Starting...")
-    templates = template.Must(template.ParseFS(resources.TemplatesFS, "templates/*.html"))
+    views = template.Must(template.ParseFS(templates.TemplatesFS , "*.html"))
 
 }
 func main() {
