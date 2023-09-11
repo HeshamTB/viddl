@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"time"
 
-	"gitea.hbanafa.com/hesham/viddl/templates"
 )
 
 const (
@@ -79,17 +78,29 @@ func writeJSONResponse(w http.ResponseWriter, s string) http.ResponseWriter {
     
 }
 
-var views *template.Template
+var templates *template.Template
+
+// TODO: Change all this to have a unified context
+var AppURL string = "http://localhost:8080"
+type HTMLBaseData struct {
+    Formats []DownloadFormats
+    AppURL string
+}
+
+var appData HTMLBaseData = HTMLBaseData{
+    AppURL: AppURL,
+}
 
 func init() {
     
     log.Println("[ init ] Starting...")
-    views = template.Must(template.ParseFS(templates.TemplatesFS , "*.html"))
+    templates = template.Must(template.ParseFS(TemplatesFS , "templates/*.html"))
 
 }
 func main() {
 
     handler := http.NewServeMux()
+    handler.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(PublicFS))))
 
     handler.HandleFunc(
         "/download", 
@@ -131,8 +142,7 @@ func main() {
             log.Println("URL from convx", downloadURL)
             
             // Serve Button Template
-            tmpl := template.Must(template.ParseFiles("templates/download-result.html"))
-            err = tmpl.Execute(w, downloadURL)
+            err = templates.ExecuteTemplate(w,"download-result.html", downloadURL)
             if err != nil {
                 log.Println(err.Error())
                 w.WriteHeader(500)
@@ -141,14 +151,14 @@ func main() {
         },
     )
     handler.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-        tmpl := template.Must(template.ParseFiles("templates/download.html"))
         formats := []DownloadFormats{}
         formats = append(formats, DownloadFormats{
             VideoRes: "720p",
             audioOnly: false,
             videoOnly: false,
         })
-        err := tmpl.Execute(w, formats)
+        appData.Formats = formats
+        err := templates.ExecuteTemplate(w, "download.html", appData)
         if err != nil {
             log.Println(err.Error())
             w.WriteHeader(500)
