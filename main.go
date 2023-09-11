@@ -2,13 +2,10 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"html/template"
-	"io"
 	"log"
 	"net/http"
 	"time"
-
 )
 
 const (
@@ -107,16 +104,6 @@ func NewContext(r *http.Request) *Context {
     }
 }
 
-var AppURL string = "http://localhost:8080"
-type HTMLBaseData struct {
-    Formats []DownloadFormats
-    AppURL string
-}
-
-var appData HTMLBaseData = HTMLBaseData{
-    AppURL: AppURL,
-}
-
 func init() {
     
     log.Println("[ init ] Starting...")
@@ -146,9 +133,8 @@ func main() {
                 w = writeJSONResponse(w, "Provide URL as query")
                 return
             }
-            // Get URL from convx
-            req, err := http.Get(fmt.Sprintf("http://localhost:80?url=%s", userURL))
 
+            downloadURL, err := getYoutubeDownloadURL(userURL)
             if err != nil {
                 log.Println(err.Error())
                 ctx.StatusCode = 500
@@ -156,23 +142,6 @@ func main() {
                 err = templates.ExecuteTemplate(w,"download-result.html", ctx)
                 return
             }
-            if req.StatusCode != 200 {
-                log.Printf("Got %v from convx\n", req)
-                ctx.StatusCode = 500
-                ctx.Err = &err
-                err = templates.ExecuteTemplate(w,"download-result.html", ctx)
-                return
-            }
-            body, err := io.ReadAll(req.Body)
-            if err != nil {
-                log.Printf("Error while reading convx response body. \n%v", err.Error())
-                ctx.StatusCode = 500
-                ctx.Err = &err
-                err = templates.ExecuteTemplate(w,"download-result.html", ctx)
-                return
-            }
-            downloadURL := string(body)
-            log.Println("URL from convx", downloadURL)
             
             ctx.DownloadURL = downloadURL
             err = templates.ExecuteTemplate(w,"download-result.html", ctx)
@@ -194,7 +163,6 @@ func main() {
             audioOnly: false,
             videoOnly: false,
         })
-        appData.Formats = formats
         err := templates.ExecuteTemplate(w, "download.html", ctx)
         if err != nil {
             log.Println(err.Error())
