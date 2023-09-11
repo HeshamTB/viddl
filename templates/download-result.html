@@ -1,6 +1,9 @@
 <div id="get-btn">
 {{ if  eq .StatusCode 200 }}
-<a href="{{ . }}" rel="" download target="_blank">Download</a>
+<a href="{{ .DownloadURL }}" rel="noopener" download target="_blank">
+    Download
+</a>
+<small>Right click and Click "Save link as"</small>
 {{ else }}
 <button>Try Again
     <!-- <a class="htmx-indicator" href="#" aria-busy="true"></a> -->

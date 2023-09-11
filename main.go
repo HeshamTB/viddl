@@ -88,6 +88,7 @@ type Context struct {
     StatusCode int
     Err *error
     IsTLS bool
+    DownloadURL string
 }
 
 func NewContext(r *http.Request) *Context {
@@ -173,6 +174,7 @@ func main() {
             downloadURL := string(body)
             log.Println("URL from convx", downloadURL)
             
+            ctx.DownloadURL = downloadURL
             err = templates.ExecuteTemplate(w,"download-result.html", ctx)
             if err != nil {
                 log.Println(err.Error())
