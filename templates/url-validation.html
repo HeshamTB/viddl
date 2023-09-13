@@ -1,0 +1,11 @@
+<div hx-target="this" hx-swap="outerHTML">
+    <label>
+        Link
+        <input name="URL" id="URL" type="url" hx-post="/valid-link" 
+        aria-invalid="{{ if .Valid }}false{{ else }}true{{ end }}" 
+        required value="{{ .URL }}"
+        hx-indicator="#url-validation-progress"
+        >
+    </label>
+        <progress class="htmx-indicator" id="url-validation-progress"></progress>
+</div>

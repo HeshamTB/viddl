@@ -20,6 +20,11 @@ type DownloadFormats struct {
     audioOnly bool
 }
 
+type URLValidationCtx struct {
+    URL string
+    Valid bool
+}
+
 type apiMessageResponse struct {
     Message string
 }
@@ -169,6 +174,7 @@ func main() {
             }
         },
     )
+
     handler.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
         ctx := NewContext(r)
         formats := []DownloadFormats{}
@@ -183,6 +189,30 @@ func main() {
             w.WriteHeader(500)
             return
         }
+    })
+
+    handler.HandleFunc("/valid-link", func(w http.ResponseWriter, r *http.Request) {
+
+        if r.Method != "POST" {
+            w.WriteHeader(400)
+            return
+        }
+
+        err := r.ParseForm()
+        if err != nil {
+            log.Println(err.Error())
+            w.WriteHeader(400)
+            return
+        }
+        
+        url := r.FormValue("URL")
+
+        ctx := URLValidationCtx{
+            URL: url,
+            Valid: isValidURL(url),
+        }
+
+        templates.ExecuteTemplate(w, "url-validation.html", ctx)
     })
 
     wrappedHandler := NewLogger(handler)
