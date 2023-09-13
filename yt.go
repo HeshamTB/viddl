@@ -31,7 +31,11 @@ func isValidURL(data string) bool {
     }
 
     
-    httpClient := &http.Client{}
+    httpClient := &http.Client{
+        CheckRedirect: func(req *http.Request, via []*http.Request) error {
+            return http.ErrUseLastResponse
+        },
+    }
     resp, err := httpClient.Get(data)
 
     if err != nil {
