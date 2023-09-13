@@ -6,11 +6,12 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="description" content="Download or playback videos and music in full quality">
         <meta name="keywords" content="Download, Youtube, yt-dlp, MP3, Convert">
-        <link rel="stylesheet" href="{{ if .IsTLS }}https{{ else }}http{{ end }}://{{ .AppURL }}/static/static/css/pico.min.css">
+        <link rel="stylesheet" href="/static/static/css/pico.min.css">
         <script src="https://unpkg.com/htmx.org@1.9.5"></script>
         <title>Viddle your fiddle</title>
     </head>
     <main class="container">
+        <h1>Viddle your fiddle</h1>
         <form hx-post="/download" hx-target="#get-btn" hx-swap="outerHTML" hx-indicator="#progress">
                 <label for="URL">Link</label>
                 <div class="grid">
