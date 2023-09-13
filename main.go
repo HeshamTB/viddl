@@ -136,6 +136,19 @@ func main() {
     handler.Handle("/assets/", http.FileServer(http.FS(AssetsFS)))
 
     handler.HandleFunc(
+        "/robots.txt",
+        func(w http.ResponseWriter, r *http.Request) {
+            robotsFile, err := RobotsFS.ReadFile("static/robots.txt")
+            if err != nil {
+                log.Println(err.Error())
+                w.WriteHeader(500)
+                return
+            }
+            w.Write(robotsFile)
+        },
+    )
+
+    handler.HandleFunc(
         "/download", 
         func(w http.ResponseWriter, r *http.Request) {
             ctx := NewContext(r)
