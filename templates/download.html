@@ -15,7 +15,7 @@
         <form hx-post="/download" hx-target="#get-btn" hx-swap="outerHTML" hx-indicator="#progress">
                 <div class="grid">
                     <div hx-target="this" hx-swap="outerHTML">
-                        <label>Link
+                        <label data-tooltip="Link can be on any platform!">Link
                             <input 
                             type="url" id="URL" name="URL" 
                             hx-post="/valid-link" hx-indicator="#url-validation-progress" required>

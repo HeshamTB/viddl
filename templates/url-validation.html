@@ -1,5 +1,7 @@
 <div hx-target="this" hx-swap="outerHTML">
-    <label>
+    <label 
+        data-tooltip="{{ if .Valid }}Link is Valid{{ else }}Link is invalid{{ end }}" 
+        >
         Link
         <input name="URL" id="URL" type="url" hx-post="/valid-link" 
         aria-invalid="{{ if .Valid }}false{{ else }}true{{ end }}" 
