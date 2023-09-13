@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -94,6 +95,12 @@ type Context struct {
 }
 
 func NewContext(r *http.Request) *Context {
+    isTLS := false
+    tls := os.Getenv("TLS")
+    if tls != "" {
+       isTLS = true 
+    }
+
     return &Context{
         request: r,
         StatusCode: 200,
@@ -105,7 +112,7 @@ func NewContext(r *http.Request) *Context {
             },
         },
         AppURL: r.Host,
-        IsTLS: false,
+        IsTLS: isTLS,
     }
 }
 
