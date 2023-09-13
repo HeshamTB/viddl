@@ -6,9 +6,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="description" content="Download or playback videos and music in full quality">
         <meta name="keywords" content="Download, Youtube, yt-dlp, MP3, Convert">
-        <link rel="stylesheet" href="https://{{ .AppURL }}/static/static/css/pico.min.css">
+        <link rel="stylesheet" href="{{ if .IsTLS }}https{{ else }}http{{ end }}://{{ .AppURL }}/static/static/css/pico.min.css">
         <script src="https://unpkg.com/htmx.org@1.9.5"></script>
-        <title>YT Download</title>
+        <title>Viddle your fiddle</title>
     </head>
     <main class="container">
         <form hx-post="/download" hx-target="#get-btn" hx-swap="outerHTML" hx-indicator="#progress">
