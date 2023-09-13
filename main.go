@@ -126,6 +126,7 @@ func init() {
     log.Println("[ init ] Starting...")
     templates = template.Must(template.ParseFS(TemplatesFS , "templates/*.html"))
     log.Println("[ init ] Templates Loaded")
+    log.Println(AssetsFS.ReadDir("assets"))
 
 }
 
