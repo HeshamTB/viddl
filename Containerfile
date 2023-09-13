@@ -17,7 +17,4 @@ COPY --from=builder /build/viddl /app/viddl
 
 RUN chmod +x /app/viddl
 
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3\
-    CMD curl -f http://localhost:8080 || exit 1
-
 CMD [ "/app/viddl" ]
