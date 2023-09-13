@@ -166,6 +166,10 @@ func main() {
                 w = writeJSONResponse(w, "Provide URL as query")
                 return
             }
+            toAudio := r.FormValue("toaudio")
+            if toAudio == "on" {
+                log.Println("User requested audio")
+            }
 
             downloadURL, err := getYoutubeDownloadURL(userURL)
             if err != nil {

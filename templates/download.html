@@ -23,20 +23,28 @@
                         <label data-tooltip="Link can be on any platform!">Link
                             <input 
                             type="url" id="URL" name="URL" 
-                            hx-post="/valid-link" hx-indicator="#url-validation-progress" required>
+                            hx-post="/valid-link" 
+                            hx-indicator="#url-validation-progress" required>
                         </label>
                     <progress class="htmx-indicator" id="url-validation-progress"></progress>
                     </div>
                     <label>Format
                         <select required>
-                            <option value="" disabled selected>Format</option>
                             {{ range .Formats }} <option>{{ .VideoRes }}</option>{{ end }}
                         </select>
                     </label>
                 </div>
+                <!-- Checkboxes -->
+                <fieldset>
+                    <label for="terms">
+                        <input type="checkbox" id="toaudio" name="toaudio" disabled>
+                        Convert to MP3 audio
+                    </label>
+                </fieldset>
                 <button id="get-btn">Get
                     <!-- <a class="htmx-indicator" href="#" aria-busy="true"></a> -->
                 </button>
+
         </form>
         <progress class="htmx-indicator" id="progress"></progress>
         <script data-cfasync="false" type="text/javascript" src="//brightadnetwork.com/a/display.php?r=7439702"></script>
