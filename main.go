@@ -126,7 +126,6 @@ func init() {
     log.Println("[ init ] Starting...")
     templates = template.Must(template.ParseFS(TemplatesFS , "templates/*.html"))
     log.Println("[ init ] Templates Loaded")
-    log.Println(AssetsFS.ReadDir("assets"))
 
 }
 
@@ -148,6 +147,20 @@ func main() {
             w.Write(robotsFile)
         },
     )
+
+    handler.HandleFunc(
+        "/sitemap.txt",
+        func(w http.ResponseWriter, r *http.Request) {
+            sitemapFile, err := AssetsFS.ReadFile("assets/sitemap.txt")
+            if err != nil {
+                log.Println(err.Error())
+                w.WriteHeader(500)
+                return
+            }
+            w.Write(sitemapFile)
+        },
+    )
+
 
     handler.HandleFunc(
         "/download", 
