@@ -113,12 +113,15 @@ func init() {
     
     log.Println("[ init ] Starting...")
     templates = template.Must(template.ParseFS(TemplatesFS , "templates/*.html"))
+    log.Println("[ init ] Templates Loaded")
 
 }
+
 func main() {
 
     handler := http.NewServeMux()
     handler.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(PublicFS))))
+    handler.Handle("/assets/", http.FileServer(http.FS(AssetsFS)))
 
     handler.HandleFunc(
         "/download", 

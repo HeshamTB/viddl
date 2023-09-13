@@ -7,3 +7,7 @@ var TemplatesFS embed.FS
 
 //go:embed static/css/* 
 var PublicFS embed.FS
+
+//go:embed assets/*
+var AssetsFS embed.FS
+
