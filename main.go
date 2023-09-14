@@ -2,10 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -121,6 +125,25 @@ func NewContext(r *http.Request) *Context {
     }
 }
 
+func handleToAudio(ctx *Context, w http.ResponseWriter) http.ResponseWriter {
+    
+    log.Println("User requested audio")
+    w.WriteHeader(400)
+
+    jsonMsg, err := json.Marshal(
+        apiMessageResponse{
+            Message: "Audio only is not implemented",
+        },
+    )
+    if err != nil {
+        log.Println(err.Error())
+        w.WriteHeader(500)
+    }
+    w.Write(jsonMsg) 
+
+    return w
+} 
+
 func init() {
     
     log.Println("[ init ] Starting...")
@@ -195,6 +218,7 @@ func main() {
             }
             
             ctx.DownloadURL = downloadURL
+            w.Header().Add("Hx-Redirect", fmt.Sprintf("/download-direct?URL=%s", ctx.DownloadURL))
             err = templates.ExecuteTemplate(w,"download-result.html", ctx)
             if err != nil {
                 log.Println(err.Error())
@@ -205,6 +229,86 @@ func main() {
             }
         },
     )
+
+    handler.HandleFunc(
+        "/download-direct", 
+        func(w http.ResponseWriter, r *http.Request) {
+
+            ctx := NewContext(r)
+            if r.Method != "GET" {
+                w.WriteHeader(400)
+                return
+            }
+
+            userURL := r.URL.Query().Get("URL")
+            urlRaw := strings.TrimLeft(r.URL.RawQuery, "URL=")
+            urlRaw, err := url.QueryUnescape(urlRaw)
+            if err != nil {
+                log.Println("Can not unescape url")
+                w.WriteHeader(400)
+                return
+            }
+            userURL = urlRaw
+
+            if userURL == "" {
+                w.WriteHeader(400)
+                ctx.StatusCode = 400
+                if err := templates.ExecuteTemplate(w,"download-result.html", ctx); err != nil {
+                    log.Println(err.Error())
+                }
+                return
+            }
+            log.Println("Got url: ", userURL, "for direct download")
+            ctx.DownloadURL = userURL
+
+            req, err := http.NewRequest("GET", ctx.DownloadURL, nil)
+            if err != nil {
+                ctx.StatusCode = 500
+                ctx.Err = &err
+                if err := templates.ExecuteTemplate(w,"download-result.html", ctx); err != nil {
+                    log.Println(err.Error())
+                }
+                return
+            }
+            req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/117.0")
+
+            client := http.Client{}
+
+            dataRequest, err := client.Do(req)
+            if err != nil {
+                log.Println(err.Error())
+                ctx.StatusCode = 500
+                ctx.Err = &err
+                if err := templates.ExecuteTemplate(w,"download-result.html", ctx); err != nil {
+                    log.Println(err.Error())
+                }
+                return
+            }
+            defer dataRequest.Body.Close()
+
+            log.Printf("HTTP Client response: %v", dataRequest)
+
+            if dataRequest.StatusCode != 200 {
+                log.Println("Failed to get content for URL", userURL)
+            }
+
+            w.Header().Set("Content-Disposition", "attachment;filename=")
+            w.WriteHeader(206)
+
+            if dataRequest.ContentLength == 0 {
+                log.Println("Empty body from content url")
+                w.WriteHeader(500)
+                return
+            }
+
+            n, err := io.Copy(w, dataRequest.Body)
+            if err != nil {
+                log.Println(err.Error())
+            }
+            log.Printf("Copied %d bytes", n)
+        },
+    )
+
 
     handler.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
         ctx := NewContext(r)
