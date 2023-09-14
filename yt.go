@@ -10,12 +10,12 @@ import (
 
 // yt-dlp flags and options for all links
 var ytdlpParams []string = []string{
+    "--get-url",
     "--no-playlist",
 }
 
 // yt-dlp flags and options only for youtube links
 var ytlinkParams []string = []string{
-    "--get-url",
     "-f 22",
 }
 
