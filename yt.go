@@ -43,6 +43,34 @@ func getYoutubeDownloadURL(link string) (string, error) {
     return dlLink, nil
 }
 
+// Get the content filename with the extension. If not possible,
+// and empty string is sent to c
+func GetContentFilename(link string, c chan string) {
+
+    var filename string
+
+    params := make([]string, 0)
+    params = append(params, "--no-playlist", "--get-title")
+
+    if isProbablyYT(link) {
+        params = append(params, ytlinkParams...)
+    }
+
+    params = append(params, link)
+
+    cmd := exec.Command("yt-dlp", params...)
+    result, err := cmd.Output()
+
+    if err != nil {
+        c <- ""
+    }
+
+    filename = string(result)
+
+    c <- filename
+
+}
+
 func isValidURL(data string) bool {
 
     _, err := url.ParseRequestURI(data)

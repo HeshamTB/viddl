@@ -208,7 +208,12 @@ func main() {
                 log.Println("User requested audio")
             }
 
+            filenameChan := make(chan string)
+
+            go GetContentFilename(userURL, filenameChan)
             downloadURL, err := getYoutubeDownloadURL(userURL)
+            filename := <- filenameChan
+
             if err != nil {
                 log.Println(err.Error())
                 ctx.StatusCode = 500
@@ -218,7 +223,13 @@ func main() {
             }
             
             ctx.DownloadURL = downloadURL
-            w.Header().Add("Hx-Redirect", fmt.Sprintf("/download-direct?URL=%s", ctx.DownloadURL))
+            w.Header().Add(
+                "Hx-Redirect", 
+                fmt.Sprintf("/download-direct?URL=%s&filename=%s",
+                url.QueryEscape(ctx.DownloadURL), 
+                url.QueryEscape(filename)),
+            )
+
             err = templates.ExecuteTemplate(w,"download-result.html", ctx)
             if err != nil {
                 log.Println(err.Error())
@@ -240,17 +251,12 @@ func main() {
                 return
             }
 
-            userURL := r.URL.Query().Get("URL")
-            urlRaw := strings.TrimLeft(r.URL.RawQuery, "URL=")
-            urlRaw, err := url.QueryUnescape(urlRaw)
-            if err != nil {
-                log.Println("Can not unescape url")
-                w.WriteHeader(400)
-                return
-            }
-            userURL = urlRaw
+
+            userURL := strings.Trim(r.URL.Query().Get("URL"), "\n")
+            filename := strings.Trim(r.URL.Query().Get("filename"), "\n")
 
             if userURL == "" {
+                log.Println("Empty URL")
                 w.WriteHeader(400)
                 ctx.StatusCode = 400
                 if err := templates.ExecuteTemplate(w,"download-result.html", ctx); err != nil {
@@ -258,11 +264,11 @@ func main() {
                 }
                 return
             }
-            log.Println("Got url: ", userURL, "for direct download")
             ctx.DownloadURL = userURL
 
             req, err := http.NewRequest("GET", ctx.DownloadURL, nil)
             if err != nil {
+                log.Println(err.Error())
                 ctx.StatusCode = 500
                 ctx.Err = &err
                 if err := templates.ExecuteTemplate(w,"download-result.html", ctx); err != nil {
@@ -286,13 +292,14 @@ func main() {
             }
             defer dataRequest.Body.Close()
 
-            log.Printf("HTTP Client response: %v", dataRequest)
-
             if dataRequest.StatusCode != 200 {
                 log.Println("Failed to get content for URL", userURL)
             }
 
-            w.Header().Set("Content-Disposition", "attachment;filename=")
+            w.Header().Set(
+                "Content-Disposition",
+                fmt.Sprintf("attachment;filename=%s", filename),
+            )
             w.WriteHeader(206)
 
             if dataRequest.ContentLength == 0 {
