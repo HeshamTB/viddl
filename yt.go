@@ -4,13 +4,32 @@ import (
 	"net/http"
 	"net/url"
 	"os/exec"
+	"strings"
 )
 
+
+// yt-dlp flags and options for all links
+var ytdlpParams []string = []string{
+    "--no-playlist",
+}
+
+// yt-dlp flags and options only for youtube links
+var ytlinkParams []string = []string{
+    "--get-url",
+    "-f 22",
+}
 
 func getYoutubeDownloadURL(link string) (string, error) {
     
     var dlLink string
-    cmd := exec.Command("yt-dlp", "--get-url", "-f 22", link)
+    params := make([]string, 0)
+    params = append(params, ytdlpParams...)
+    
+    if isProbablyYT(link) {
+        params = append(params, ytlinkParams...)
+    }
+
+    cmd := exec.Command("yt-dlp", link)
     result, err := cmd.Output()
 
     if err != nil {
@@ -47,5 +66,9 @@ func isValidURL(data string) bool {
     }
 
     return true
+}
+
+func isProbablyYT(link string) bool {
+    return strings.Contains(link, "youtube")
 }
 
