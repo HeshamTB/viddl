@@ -29,7 +29,9 @@ func getYoutubeDownloadURL(link string) (string, error) {
         params = append(params, ytlinkParams...)
     }
 
-    cmd := exec.Command("yt-dlp", link)
+    params = append(params, link)
+
+    cmd := exec.Command("yt-dlp", params...)
     result, err := cmd.Output()
 
     if err != nil {
