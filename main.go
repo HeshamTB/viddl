@@ -361,8 +361,8 @@ func main() {
 
     wrappedHandler := NewLogger(handler)
     srv := http.Server{
-        ReadTimeout: 10 * time.Second,
-        WriteTimeout: 10 * time.Second,
+        ReadTimeout: 60 * time.Second,
+        WriteTimeout: 60 * time.Second,
         Addr: ":" + DEFAULT_HTTP_PORT,
         Handler: wrappedHandler,
     }
