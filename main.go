@@ -294,19 +294,21 @@ func main() {
 
             if dataRequest.StatusCode != 200 {
                 log.Println("Failed to get content for URL", userURL)
+                return
             }
-
-            w.Header().Set(
-                "Content-Disposition",
-                fmt.Sprintf("attachment;filename=%s", filename),
-            )
-            w.WriteHeader(206)
-
+            contentLength := dataRequest.Header.Get("Content-Length")
             if dataRequest.ContentLength == 0 {
                 log.Println("Empty body from content url")
                 w.WriteHeader(500)
                 return
             }
+            
+            w.Header().Set(
+                "Content-Disposition",
+                fmt.Sprintf("attachment;filename=%s;", filename),
+            )
+            w.Header().Set("Content-Length", contentLength)
+            w.WriteHeader(206)
 
             n, err := io.Copy(w, dataRequest.Body)
             if err != nil {
