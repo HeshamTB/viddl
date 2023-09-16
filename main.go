@@ -146,6 +146,175 @@ func handleToAudio(ctx *Context, w http.ResponseWriter) http.ResponseWriter {
     return w
 } 
 
+
+func handleDownload(w http.ResponseWriter, r *http.Request) {
+    ctx := NewContext(r)
+    if r.Method != "POST" {
+        w.WriteHeader(400)
+        return
+    }
+    err := r.ParseForm()
+    if err != nil {
+        w.WriteHeader(400)
+        return
+    }
+    userURL := r.FormValue("URL")
+    if userURL == "" {
+        w = writeJSONResponse(w, "Provide URL as query")
+        return
+    }
+    toAudio := r.FormValue("toaudio")
+    if toAudio == "on" {
+        log.Println("User requested audio")
+    }
+
+    filenameChan := make(chan string)
+
+    go GetContentFilename(userURL, filenameChan)
+    downloadURL, err := getYoutubeDownloadURL(userURL)
+    filename := <- filenameChan
+
+    if err != nil {
+        log.Println(err.Error())
+        ctx.StatusCode = 500
+        ctx.Err = &err
+        err = templates.ExecuteTemplate(w,"download-result.html", ctx)
+        return
+    }
+
+    ctx.DownloadURL = downloadURL
+    w.Header().Add(
+        "Hx-Redirect", 
+        fmt.Sprintf("/download-direct?URL=%s&filename=%s",
+        url.QueryEscape(ctx.DownloadURL), 
+        url.QueryEscape(filename)),
+    )
+
+    err = templates.ExecuteTemplate(w,"download-result.html", ctx)
+    if err != nil {
+        log.Println(err.Error())
+        ctx.StatusCode = 500
+        ctx.Err = &err
+        err = templates.ExecuteTemplate(w,"download-result.html", ctx)
+        return
+    }
+}
+
+func handleDirectDownload(w http.ResponseWriter, r *http.Request) {
+
+    ctx := NewContext(r)
+    if r.Method != "GET" {
+        w.WriteHeader(400)
+        return
+    }
+
+
+    userURL := strings.Trim(r.URL.Query().Get("URL"), "\n")
+    filename := strings.Trim(r.URL.Query().Get("filename"), "\n")
+
+    if userURL == "" {
+        log.Println("Empty URL")
+        w.WriteHeader(400)
+        ctx.StatusCode = 400
+        if err := templates.ExecuteTemplate(w,"download-result.html", ctx); err != nil {
+            log.Println(err.Error())
+        }
+        return
+    }
+    ctx.DownloadURL = userURL
+
+    req, err := http.NewRequest("GET", ctx.DownloadURL, nil)
+    if err != nil {
+        log.Println(err.Error())
+        ctx.StatusCode = 500
+        ctx.Err = &err
+        if err := templates.ExecuteTemplate(w,"download-result.html", ctx); err != nil {
+            log.Println(err.Error())
+        }
+        return
+    }
+    req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/117.0")
+
+    client := http.Client{}
+
+    dataRequest, err := client.Do(req)
+    if err != nil {
+        log.Println(err.Error())
+        ctx.StatusCode = 500
+        ctx.Err = &err
+        if err := templates.ExecuteTemplate(w,"download-result.html", ctx); err != nil {
+            log.Println(err.Error())
+        }
+        return
+    }
+    defer dataRequest.Body.Close()
+
+    if dataRequest.StatusCode != 200 {
+        log.Println("Failed to get content for URL", userURL)
+        return
+    }
+    contentLength := dataRequest.Header.Get("Content-Length")
+    if dataRequest.ContentLength == 0 {
+        log.Println("Empty body from content url")
+        w.WriteHeader(500)
+        return
+    }
+
+    w.Header().Set(
+        "Content-Disposition",
+        fmt.Sprintf("attachment;filename=%s;", filename),
+    )
+    w.Header().Set("Content-Length", contentLength)
+    w.WriteHeader(206)
+
+    n, err := io.Copy(w, dataRequest.Body)
+    if err != nil {
+        log.Println(err.Error())
+    }
+    log.Printf("Copied %d bytes", n)
+}
+
+func handleRoot(w http.ResponseWriter, r *http.Request) {
+    ctx := NewContext(r)
+    formats := []DownloadFormats{}
+    formats = append(formats, DownloadFormats{
+        VideoRes: "720p",
+        audioOnly: false,
+        videoOnly: false,
+    })
+    err := templates.ExecuteTemplate(w, "download.html", ctx)
+    if err != nil {
+        log.Println(err.Error())
+        w.WriteHeader(500)
+        return
+    }
+}
+
+func handleValidLink(w http.ResponseWriter, r *http.Request) {
+    if r.Method != "POST" {
+        w.WriteHeader(400)
+        return
+    }
+
+    err := r.ParseForm()
+    if err != nil {
+        log.Println(err.Error())
+        w.WriteHeader(400)
+        return
+    }
+
+    url := r.FormValue("URL")
+
+    ctx := URLValidationCtx{
+        URL: url,
+        Valid: isValidURL(url),
+    }
+
+    templates.ExecuteTemplate(w, "url-validation.html", ctx)
+}
+
+
+
 func init() {
     
     log.Println("[ init ] Starting...")
@@ -194,179 +363,11 @@ func main() {
     )
 
 
-    handler.HandleFunc(
-        "/download", 
-        func(w http.ResponseWriter, r *http.Request) {
-            ctx := NewContext(r)
-            if r.Method != "POST" {
-                w.WriteHeader(400)
-                return
-            }
-            err := r.ParseForm()
-            if err != nil {
-                w.WriteHeader(400)
-                return
-            }
-            userURL := r.FormValue("URL")
-            if userURL == "" {
-                w = writeJSONResponse(w, "Provide URL as query")
-                return
-            }
-            toAudio := r.FormValue("toaudio")
-            if toAudio == "on" {
-                log.Println("User requested audio")
-            }
+    handler.HandleFunc("/", handleRoot)
+    handler.HandleFunc("/download", handleDownload)
+    handler.HandleFunc("/download-direct", handleDirectDownload)
+    handler.HandleFunc("/valid-link", handleValidLink)
 
-            filenameChan := make(chan string)
-
-            go GetContentFilename(userURL, filenameChan)
-            downloadURL, err := getYoutubeDownloadURL(userURL)
-            filename := <- filenameChan
-
-            if err != nil {
-                log.Println(err.Error())
-                ctx.StatusCode = 500
-                ctx.Err = &err
-                err = templates.ExecuteTemplate(w,"download-result.html", ctx)
-                return
-            }
-            
-            ctx.DownloadURL = downloadURL
-            w.Header().Add(
-                "Hx-Redirect", 
-                fmt.Sprintf("/download-direct?URL=%s&filename=%s",
-                url.QueryEscape(ctx.DownloadURL), 
-                url.QueryEscape(filename)),
-            )
-
-            err = templates.ExecuteTemplate(w,"download-result.html", ctx)
-            if err != nil {
-                log.Println(err.Error())
-                ctx.StatusCode = 500
-                ctx.Err = &err
-                err = templates.ExecuteTemplate(w,"download-result.html", ctx)
-                return
-            }
-        },
-    )
-
-    handler.HandleFunc(
-        "/download-direct", 
-        func(w http.ResponseWriter, r *http.Request) {
-
-            ctx := NewContext(r)
-            if r.Method != "GET" {
-                w.WriteHeader(400)
-                return
-            }
-
-
-            userURL := strings.Trim(r.URL.Query().Get("URL"), "\n")
-            filename := strings.Trim(r.URL.Query().Get("filename"), "\n")
-
-            if userURL == "" {
-                log.Println("Empty URL")
-                w.WriteHeader(400)
-                ctx.StatusCode = 400
-                if err := templates.ExecuteTemplate(w,"download-result.html", ctx); err != nil {
-                    log.Println(err.Error())
-                }
-                return
-            }
-            ctx.DownloadURL = userURL
-
-            req, err := http.NewRequest("GET", ctx.DownloadURL, nil)
-            if err != nil {
-                log.Println(err.Error())
-                ctx.StatusCode = 500
-                ctx.Err = &err
-                if err := templates.ExecuteTemplate(w,"download-result.html", ctx); err != nil {
-                    log.Println(err.Error())
-                }
-                return
-            }
-            req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/117.0")
-
-            client := http.Client{}
-
-            dataRequest, err := client.Do(req)
-            if err != nil {
-                log.Println(err.Error())
-                ctx.StatusCode = 500
-                ctx.Err = &err
-                if err := templates.ExecuteTemplate(w,"download-result.html", ctx); err != nil {
-                    log.Println(err.Error())
-                }
-                return
-            }
-            defer dataRequest.Body.Close()
-
-            if dataRequest.StatusCode != 200 {
-                log.Println("Failed to get content for URL", userURL)
-                return
-            }
-            contentLength := dataRequest.Header.Get("Content-Length")
-            if dataRequest.ContentLength == 0 {
-                log.Println("Empty body from content url")
-                w.WriteHeader(500)
-                return
-            }
-            
-            w.Header().Set(
-                "Content-Disposition",
-                fmt.Sprintf("attachment;filename=%s;", filename),
-            )
-            w.Header().Set("Content-Length", contentLength)
-            w.WriteHeader(206)
-
-            n, err := io.Copy(w, dataRequest.Body)
-            if err != nil {
-                log.Println(err.Error())
-            }
-            log.Printf("Copied %d bytes", n)
-        },
-    )
-
-
-    handler.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-        ctx := NewContext(r)
-        formats := []DownloadFormats{}
-        formats = append(formats, DownloadFormats{
-            VideoRes: "720p",
-            audioOnly: false,
-            videoOnly: false,
-        })
-        err := templates.ExecuteTemplate(w, "download.html", ctx)
-        if err != nil {
-            log.Println(err.Error())
-            w.WriteHeader(500)
-            return
-        }
-    })
-
-    handler.HandleFunc("/valid-link", func(w http.ResponseWriter, r *http.Request) {
-
-        if r.Method != "POST" {
-            w.WriteHeader(400)
-            return
-        }
-
-        err := r.ParseForm()
-        if err != nil {
-            log.Println(err.Error())
-            w.WriteHeader(400)
-            return
-        }
-        
-        url := r.FormValue("URL")
-
-        ctx := URLValidationCtx{
-            URL: url,
-            Valid: isValidURL(url),
-        }
-
-        templates.ExecuteTemplate(w, "url-validation.html", ctx)
-    })
 
     wrappedHandler := NewLogger(handler)
     srv := http.Server{
