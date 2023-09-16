@@ -12,12 +12,14 @@
         <title>Viddle your fiddle</title>
     </head>
     <main class="container">
-        <div class="headings">
-            <h3>
-                Viddle your fiddle
-                <h4>Grab your videos for safe keeping!</h4>
-            </h3>
-        </div>
+        <article class="grid">
+        <div>
+            <hgroup>
+                <h3>
+                    Viddle your fiddle
+                    <h4>Grab your videos for safe keeping!</h4>
+                </h3>
+            </hgroup>
         <form hx-post="/download" hx-target="#get-btn" hx-swap="outerHTML" hx-indicator="#progress">
                 <div class="grid">
                     <div hx-target="this" hx-swap="outerHTML">
@@ -48,6 +50,10 @@
 
         </form>
         <progress class="htmx-indicator" id="progress"></progress>
+        </div>
+        <div>
+            <img src="/assets/images/play.png">
+        </div>
         <script data-cfasync="false" type="text/javascript" src="//brightadnetwork.com/a/display.php?r=7440414"></script>
         <script data-cfasync="false" type="text/javascript" data-adel="atag" src="//acscdn.com/script/atg.js" czid="gobrl6fkye"></script>
     </main>
