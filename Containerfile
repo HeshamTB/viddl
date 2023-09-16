@@ -4,7 +4,10 @@ WORKDIR /build
 
 COPY ./ /build
 
-RUN sed -i 's/1.21.0/1.21/g' /build/go.mod
+RUN ls -lah
+RUN sed -i 's/1.21.1/1.21/g' /build/go.mod
+RUN sed -i 's/1.21.1/1.21/g' /build/go.work
+RUN sed -i 's/1.21.1/1.21/g' /build/apkupdater/go.mod
 RUN go mod edit -go=1.19
 
 RUN go build -o viddl .
