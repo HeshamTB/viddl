@@ -3,6 +3,7 @@ package apkupdater
 import (
 	"fmt"
 	"log"
+	"os/exec"
 	"sync"
 	"time"
 )
@@ -24,9 +25,19 @@ type AlpineLinuxPackageUpdate struct {
 }
 
 func (u *AlpineLinuxPackageUpdate) Update() {
+    
     u.apkLock.Lock()
     log.Println("Updating packages...")
+    cmd := exec.Command("apk", u.Packages...)
+    stdout, err := cmd.Output()
     u.apkLock.Unlock()
+    if err != nil {
+        log.Println(err.Error())
+    }
+    if cmd.ProcessState.ExitCode() != 1 {
+        log.Printf("Update command returned exit status %d\n", cmd.ProcessState.ExitCode())
+        log.Println(string(stdout))
+    }
     log.Println("Done updating packges")
 }
 
@@ -45,7 +56,7 @@ func (u *AlpineLinuxPackageUpdate) Run() {
         }
         fmt.Println("Updater stopped")
     }()
-    log.Println("Started apline linux package updater")
+    log.Println("Started Alpine linux package updater")
 }
 
 func (u *AlpineLinuxPackageUpdate) ValidPackages() bool {
