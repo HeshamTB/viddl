@@ -11,6 +11,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"gitea.hbanafa.com/hesham/viddl/apkupdater"
 )
 
 const (
@@ -153,6 +155,13 @@ func init() {
 }
 
 func main() {
+
+    updater, err := apkupdater.InitPkgUpdater()
+    if err != nil {
+        log.Println("Could not init Package Updater!\n", err.Error())
+    }
+
+    updater.Run()
 
     handler := http.NewServeMux()
     handler.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(PublicFS))))
@@ -369,6 +378,8 @@ func main() {
     
     log.Printf("Starting HTTP on %s", DEFAULT_HTTP_PORT)
     log.Fatalln(srv.ListenAndServe())
+    log.Println("HTTP server stopped")
+    updater.Stop()
 }
 
 
