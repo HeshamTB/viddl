@@ -275,6 +275,11 @@ func handleDirectDownload(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
+    if r.URL.Path != "/" && r.URL.Path != "" {
+        w.WriteHeader(http.StatusNotFound)
+        return
+    }
+
     ctx := NewContext(r)
     formats := []DownloadFormats{}
     formats = append(formats, DownloadFormats{
