@@ -24,7 +24,7 @@
         <form hx-post="/download" hx-target="#get-btn" hx-swap="outerHTML" hx-indicator="#progress">
                 <div class="grid">
                     <div hx-target="this" hx-swap="outerHTML">
-                        <label data-tooltip="Link can be on any platform!">Link
+                        <label>Link
                             <input 
                             type="url" id="URL" name="URL" 
                             hx-post="/valid-link" 
@@ -45,7 +45,7 @@
                         Convert to MP3 audio
                     </label>
                 </fieldset>
-                <button class=" outline" id="get-btn" role="button">Get
+                <button class="outline" id="get-btn" role="button">Get
                     <!-- <a class="htmx-indicator" href="#" aria-busy="true"></a> -->
                 </button>
 
@@ -53,9 +53,7 @@
         <progress class="htmx-indicator" id="progress"></progress>
         </div>
         <div>
-            <img src="/assets/images/play.png">
+            <img style="scale: 0.5;" src="/assets/images/play.png">
         </div>
-        <script data-cfasync="false" type="text/javascript" src="//brightadnetwork.com/a/display.php?r=7440414"></script>
-        <script data-cfasync="false" type="text/javascript" data-adel="atag" src="//acscdn.com/script/atg.js" czid="gobrl6fkye"></script>
     </main>
 </html>
