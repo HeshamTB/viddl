@@ -60,9 +60,9 @@ type AlpineLinuxPackageUpdate struct {
 
 func (u *AlpineLinuxPackageUpdate) Update() {
     
-    u.apkLock.Lock()
     log.Println("Updating packages...")
     cmd := exec.Command("apk", u.Packages...)
+    u.apkLock.Lock()
     stdout, err := cmd.Output()
     u.apkLock.Unlock()
     if err != nil {
