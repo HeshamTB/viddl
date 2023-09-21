@@ -183,21 +183,12 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
     }
 
     ctx.DownloadURL = downloadURL
-    w.Header().Add(
-        "Hx-Redirect", 
-        fmt.Sprintf("/download-direct?URL=%s&filename=%s",
+    ctx.DownloadURL = fmt.Sprintf("/download-direct?URL=%s&filename=%s",
         url.QueryEscape(ctx.DownloadURL), 
-        url.QueryEscape(filename)),
+        url.QueryEscape(filename),
     )
 
-    err = templates.ExecuteTemplate(w,"download-result.html", ctx)
-    if err != nil {
-        log.Println(err.Error())
-        ctx.StatusCode = 500
-        ctx.Err = &err
-        err = templates.ExecuteTemplate(w,"download-result.html", ctx)
-        return
-    }
+    w.Header().Add("Hx-Redirect", ctx.DownloadURL)
 }
 
 func handleDirectDownload(w http.ResponseWriter, r *http.Request) {
