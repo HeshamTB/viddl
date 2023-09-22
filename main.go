@@ -267,7 +267,7 @@ func handleDirectDownload(w http.ResponseWriter, r *http.Request) {
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
     if r.URL.Path != "/" && r.URL.Path != "" {
-        w.WriteHeader(http.StatusNotFound)
+        http.Redirect(w, r, "/", http.StatusPermanentRedirect)
         return
     }
 
